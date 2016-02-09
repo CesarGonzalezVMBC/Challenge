@@ -1,0 +1,7 @@
+AS part as the migration to a microservices architecture we need to gather information from the current C# monolith application.
+With all the information of the C# app we can identify which services are running now and plan a nodejs conversion.
+Getting the services we can a start a paralell development of each service in nodejs.
+In addition each new microservice will have their own database so we can reduce the DB instance with multiple smaller databases.
+The new microservice model will can be implemented using Docker containers. Moving each microservice to production environment
+we can deploy a new C# app version who will consume the new microservice and will have disabled the old code part in C#.
+

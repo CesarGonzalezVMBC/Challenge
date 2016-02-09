@@ -1,0 +1,7 @@
+Enter IP:port1,port2,port3...
+Checking 2.2.2.2:22
+Connection to 2.2.2.2 failed
+Enter IP:port1,port2,port3...(crtl+c to exit)
+Checking localhost:135
+Connection OK
+Enter IP:port1,port2,port3...(crtl+c to exit)

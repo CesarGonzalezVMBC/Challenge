@@ -1,0 +1,5 @@
+Vagrant box with Hadoop 2.3.0 and Ganglia monitoring tool.
+
+Access link:
+http://hadoop-cluster:50070
+http://hadoop-cluster/ganglia

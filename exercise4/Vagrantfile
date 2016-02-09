@@ -1,0 +1,95 @@
+$hosts_script = <<SCRIPT
+cat > /etc/hosts <<EOF
+127.0.0.1       localhost
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+EOF
+SCRIPT
+
+$master_script = <<SCRIPT
+#!/bin/bash
+
+apt-get update
+apt-get install openjdk-7-jdk -y
+apt-get install gmetad ganglia-webfrontend -y
+apt-get install ganglia-monitor -y
+sudo ln -s /etc/ganglia-webfrontend/apache.conf /etc/apache2/conf.d/ganglia.conf
+sudo cp /vagrant/resources/gmetad.conf /etc/ganglia/
+sudo cp /vagrant/resources/gmond.conf /etc/ganglia/
+sudo service apache2 reload
+
+cd /vagrant/resources
+wget http://archive.cloudera.com/cdh5/cdh/5/hadoop-2.3.0-cdh5.0.1.tar.gz
+cd /opt
+tar -xzf /vagrant/resources/hadoop-2.3.0-cdh5.0.1.tar.gz
+cd hadoop-2.3.0-cdh5.0.1
+export HADOOP_HOME=/opt/hadoop-2.3.0-cdh5.0.1
+cp -R /vagrant/etc/hadoop/* $HADOOP_HOME/etc/hadoop/
+sudo cp /vagrant/resources/hadoop-metrics.properties $HADOOP_HOME/etc/hadoop/
+sudo cp /vagrant/resources/hadoop-metrics2.properties $HADOOP_HOME/etc/hadoop/
+
+cd /vagrant/users-and-dirs
+./java.sh
+./users.sh
+./dirs.sh
+
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export HADOOP_YARN_HOME=$HADOOP_HOME
+export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
+export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
+cd $HADOOP_HOME
+
+sudo -u vagrant ./bin/hdfs namenode -format
+#sudo -u vagrant ./sbin/start-dfs.sh
+#sudo -u vagrant ./sbin/start-yarn.sh
+sudo -u vagrant /vagrant/start-hadoop.sh
+
+sudo -u vagrant ./bin/hdfs dfs -mkdir -p /user/log/history
+sudo -u vagrant ./bin/hdfs dfs -chmod -R 1777 /user/log/history
+sudo -u vagrant ./bin/hdfs dfs -chown mapred:hadoop /user/log/history
+
+sudo -u vagrant ./bin/hadoop fs -mkdir /tmp
+sudo -u vagrant ./bin/hadoop fs -chmod -R 1777 /tmp
+
+sudo service ganglia-monitor start
+sudo service gmetad start
+sudo services apache2 restart
+sudo service ganglia-monitor restart
+
+SCRIPT
+
+Vagrant.configure("2") do |config|
+
+  # Define base image
+  config.vm.box = "precise64"
+  config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+  
+  # Manage /etc/hosts on host and VMs
+  config.hostmanager.enabled = false
+  config.hostmanager.manage_host = true
+  config.hostmanager.include_offline = true
+  config.hostmanager.ignore_private_ip = false
+
+  config.vm.define :master do |master|
+    master.vm.provider :virtualbox do |v|
+      v.name = "hadoop-cluster"
+      v.customize ["modifyvm", :id, "--memory", "4096"]
+    end
+    master.vm.network :private_network, ip: "10.1.0.100"
+    master.vm.hostname = "hadoop-cluster"
+    master.vm.provision :shell, :inline => $hosts_script
+    master.vm.provision :hostmanager
+    master.vm.provision :shell, :inline => $master_script
+  end
+
+
+
+end

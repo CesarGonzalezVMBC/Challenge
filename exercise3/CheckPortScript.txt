@@ -1,0 +1,8 @@
+Run CheckPort.sh from Windows bash or linux.
+Enter IP:Port1,Port2,Port3...
+Will check connectivity for each port
+curl was used due to is a common tool for both Windows an linux.
+Asuming 5sec for timeout connectio to IP
+A result.log file is created with check results.
+Script uses vagrant insecure_private_key stored in user's profile to access Vagrant test box.
+Vagrant test box has mysql and apache installed and stopped to test ssh service start.
